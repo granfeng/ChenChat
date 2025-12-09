@@ -110,7 +110,7 @@ int main(){
     std::thread r(recv_loop, sock);
     // 6. 获取目标客户端ID
     uint32_t target;
-    std::cout << "请输入目标 client_id：";
+    std::cout << "target's client_id:";
     std::cin >> target;
     std::cin.ignore();
 
