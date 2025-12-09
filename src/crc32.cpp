@@ -1,10 +1,12 @@
-// src/crc32.cpp
-#include "../include/crc32.hpp"
 #include <cstdint>
 
+#include "../include/crc32.hpp"
+
+// 静态全局变量
 static uint32_t crc_table[256];
 static bool crc_init = false;
 
+// CRC表初始化函数
 static void init_table(){
     for(uint32_t i=0;i<256;i++){
         uint32_t c = i;
@@ -17,6 +19,7 @@ static void init_table(){
     crc_init = true;
 }
 
+// CRC32计算函数
 uint32_t crc32_calc(const void* data, size_t length){
     if(!crc_init) init_table();
     const uint8_t* buf = (const uint8_t*)data;

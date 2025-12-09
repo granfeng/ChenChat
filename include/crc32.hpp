@@ -1,4 +1,3 @@
-// include/crc32.hpp
 #pragma once
 #include <cstdint>
 #include <cstddef>

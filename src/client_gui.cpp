@@ -1,4 +1,3 @@
-// src/client_gui.cpp
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <winsock2.h>
 #include <windows.h>
@@ -25,10 +24,13 @@ HWND hMain, hLog, hInput, hIP, hTarget;
 SOCKET g_sock = INVALID_SOCKET;
 std::atomic<bool> g_run{false};
 uint32_t myid = 0;
+
+// 接收文件管理
 std::mutex incoming_mtx;
 struct Incoming { uint64_t expected=0, received=0; std::string out; };
 std::map<std::string, Incoming> incoming;
 
+// 字符类型转换
 std::string w2u(const std::wstring &ws){
     if(ws.empty()) return {};
     int n = WideCharToMultiByte(CP_UTF8, 0, ws.c_str(), (int)ws.size(), nullptr, 0, nullptr, nullptr);
@@ -44,6 +46,7 @@ std::wstring u2w(const std::string &s){
     return w;
 }
 
+// 添加日志
 void append_log(const std::wstring& t){
     int len = GetWindowTextLengthW(hLog);
     SendMessageW(hLog, EM_SETSEL, len, len);
@@ -51,6 +54,7 @@ void append_log(const std::wstring& t){
     SendMessageW(hLog, EM_REPLACESEL, FALSE, (LPARAM)s.c_str());
 }
 
+// 发送/接收全部数据
 bool send_all(SOCKET s, const void* buf, int len){
     const char* p = (const char*)buf; int rem = len;
     while(rem>0){
@@ -70,6 +74,7 @@ bool recv_all(SOCKET s, void* buf, int len){
     return true;
 }
 
+// 显示图片预览
 void show_image_preview(const std::string &path){
     // spawn thread to show a simple window and draw image using GDI+
     std::thread([path](){
@@ -80,8 +85,8 @@ void show_image_preview(const std::string &path){
         RegisterClassW(&wc);
         Bitmap bmp(wpath.c_str());
         UINT bw = bmp.GetWidth(), bh = bmp.GetHeight();
-        int winw = (int)std::min<UINT>(bw, 800);
-        int winh = (int)std::min<UINT>(bh, 600);
+        int winw = (int)std::min<UINT>(bw, 2000);
+        int winh = (int)std::min<UINT>(bh, 2000);
         HWND wh = CreateWindowW(L"ImgPreviewClass", L"图片预览", WS_OVERLAPPEDWINDOW,
                                 CW_USEDEFAULT, CW_USEDEFAULT, winw+16, winh+39, NULL, NULL, hi, NULL);
         ShowWindow(wh, SW_SHOW);
@@ -97,11 +102,13 @@ void show_image_preview(const std::string &path){
     }).detach();
 }
 
+// 处理文本信息
 void handle_text_forward(uint32_t sender, const std::vector<uint8_t>& body){
     std::string s((char*)body.data(), body.size());
     std::wstring ws = u2w(s);
     append_log(L"[" + std::to_wstring(sender) + L"] " + ws);
 }
+// 处理文件信息
 void handle_file_meta(uint32_t sender, const std::vector<uint8_t>& body){
     if(body.size() < 2+8) { append_log(L"[file meta malformed]"); return; }
     uint16_t name_len = *(uint16_t*)(body.data());
@@ -151,6 +158,7 @@ void handle_file_chunk(uint32_t sender, const std::vector<uint8_t>& body){
     }
 }
 
+// 接收线程函数
 void recv_thread(){
     while(g_run){
         AppHeader hdr;
